@@ -18,7 +18,7 @@ StayAwake Pro keeps your PC awake by preventing sleep mode and screensavers.
 1. **Launch the app** – Protection starts automatically.
 2. **Minimize** – Closing the window minimizes it to the tray.
 3. **Restore or exit** – Right-click the tray icon to restore or quit.
-4. To start automatically with Windows, enable the option in Settings.
+4. **Start automatically with Windows** - enable the option in Settings.
 
 ---
 
@@ -52,4 +52,4 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 ---
 
-**Created by Justin Bodzay-Dero – Copyright © 2025**
+**Copyright © 2025 Justin Bodzay-Dero**
