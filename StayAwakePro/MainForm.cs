@@ -30,13 +30,13 @@ namespace StayAwakePro
         private Button aboutButton;
         private Timer statusAnimationTimer;
         private int animationFrame = 0;
-        private SettingsModel Config;
+        private AppConfig appConfig;
 
         private readonly string configFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.cfg");
 
-        public MainForm()
+        public MainForm(AppConfig config)
         {
-            Config = LoadSettings();
+            appConfig = config;
 
             Text = "StayAwake Pro";
             Size = new Size(270, 120);
@@ -132,12 +132,12 @@ namespace StayAwakePro
             settingsButton.FlatAppearance.MouseOverBackColor = Color.Gainsboro;
             settingsButton.Click += (s, e) =>
             {
-                using (var form = new SettingsForm(Config))
+                using (var form = new SettingsForm(appConfig.Settings))
                 {
                     if (form.ShowDialog(this) == DialogResult.OK)
                     {
-                        Config = form.UpdatedSettings;
-                        SaveSettings(Config);
+                        appConfig.Settings = form.UpdatedSettings;
+                        appConfig.Save();
                         ApplyStartupSettings();
                     }
                 }
@@ -201,14 +201,13 @@ namespace StayAwakePro
             EnableAwake();
             ApplyStartupSettings();
             // Show startup notification if starting minimized
-            if (Config.StartMinimized && Config.ShowTrayNotifications)
+            if (appConfig.Settings.StartMinimized && appConfig.Settings.ShowTrayNotifications)
             {
                 trayIcon.BalloonTipTitle = "StayAwake Pro";
                 trayIcon.BalloonTipText = "Running minimized in the system tray.";
                 trayIcon.BalloonTipIcon = ToolTipIcon.Info;
                 trayIcon.ShowBalloonTip(2000);
             }
-
 
             SystemEvents.SessionSwitch += OnSessionSwitch;
             SystemEvents.PowerModeChanged += OnPowerModeChanged;
@@ -285,7 +284,7 @@ namespace StayAwakePro
             {
                 using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true))
                 {
-                    if (Config.StartOnBoot)
+                    if (appConfig.Settings.StartOnBoot)
                     {
                         string exePath = $"\"{Application.ExecutablePath}\"";
                         key.SetValue("StayAwakePro", exePath);
@@ -310,7 +309,7 @@ namespace StayAwakePro
 
         protected override void SetVisibleCore(bool value)
         {
-            if (Config.StartMinimized && !IsHandleCreated)
+            if (appConfig.Settings.StartMinimized && !IsHandleCreated)
             {
                 base.SetVisibleCore(false);
                 CreateHandle();
@@ -340,10 +339,7 @@ namespace StayAwakePro
                 statusAnimationTimer.Start();
             }
 
-            if (Config.Debug)
-            {
-                Log("EnableAwake() called.");
-            }
+            SafeLogger.WriteIfDebug("EnableAwake() called.", appConfig);
         }
 
         internal void PauseAwake()
@@ -359,10 +355,7 @@ namespace StayAwakePro
             activityBar.Style = ProgressBarStyle.Blocks;
             activityBar.Value = 0;
 
-            if (Config.Debug)
-            {
-                Log("PauseAwake() called.");
-            }
+            SafeLogger.WriteIfDebug("PauseAwake() called.", appConfig);
         }
 
         private void StatusAnimationTimer_Tick(object sender, EventArgs e)
@@ -380,7 +373,7 @@ namespace StayAwakePro
             Hide();
             trayIcon.Visible = true;
 
-            if (Config.ShowTrayNotifications)
+            if (appConfig.Settings.ShowTrayNotifications)
             {
                 trayIcon.BalloonTipTitle = "StayAwake Pro";
                 trayIcon.BalloonTipText = "Running in the background.";
@@ -455,10 +448,7 @@ namespace StayAwakePro
                 File.Move(path, $"log_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
             }
 
-            if (Config.Debug)
-            {
-                File.AppendAllText(path, $"{DateTime.Now:G} - {message}{Environment.NewLine}");
-            }
+            SafeLogger.WriteIfDebug(message, appConfig);
         }
 
         private void ShowAboutDialog()
@@ -468,13 +458,5 @@ namespace StayAwakePro
                 aboutForm.ShowDialog(this);
             }
         }
-    }
-
-    public class SettingsModel
-    {
-        public bool StartOnBoot { get; set; }
-        public bool StartMinimized { get; set; }
-        public bool ShowTrayNotifications { get; set; }
-        public bool Debug { get; set; }
     }
 }

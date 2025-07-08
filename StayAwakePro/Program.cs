@@ -1,45 +1,69 @@
-﻿using System;
+﻿using StayAwakePro;
+using System;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
+
 
 namespace StayAwakePro
 {
     static class Program
     {
-        // Unique Mutex name for this application
         private static readonly string MutexName = "StayAwakeProAppMutex";
 
         [STAThread]
         static void Main()
         {
+            var config = new AppConfig();
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             Application.ThreadException += (s, e) =>
             {
-                File.AppendAllText("log.txt", $"{DateTime.Now:G} - Unhandled exception: {e.Exception}\n");
-                MessageBox.Show("An unexpected error occurred:\n" + e.Exception.Message, "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                SafeLogger.WriteIfDebug("Unhandled exception: " + e.Exception, config);
+                MessageBox.Show("An unexpected error occurred:\n" + e.Exception.Message,
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            };
+            Application.ThreadException += (s, e) =>
+            {
+                SafeLogger.Write("Unhandled exception: " + e.Exception);
+                MessageBox.Show("An unexpected error occurred:\\n" + e.Exception.Message,
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             };
 
-            using (var mutex = new Mutex(true, MutexName, out bool isNewInstance))
+            bool isNewInstance;
+            var mutex = new Mutex(true, MutexName, out isNewInstance);
+            try
             {
                 if (!isNewInstance)
                 {
-                    MessageBox.Show(
-                        "StayAwake Pro is already running.",
-                        "Application Already Running",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                    MessageBox.Show("StayAwake Pro is already running.",
+                        "Application Already Running", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new MainForm());
+
+                if (config.Settings.Debug)
+                {
+                    SafeLogger.Write("Launching StayAwake Pro");
+                    SafeLogger.Write("Debug logging is enabled");
+                }
+                if (config.Settings.Debug)
+
+
+
+
+                    if (config.Settings.Debug)
+                    {
+                    }
+
+                Application.Run(new MainForm(config));
+            }
+            finally
+            {
+                if (isNewInstance && mutex != null)
+                    mutex.Dispose();
             }
         }
-
     }
 }
-
